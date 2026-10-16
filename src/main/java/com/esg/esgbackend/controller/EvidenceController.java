@@ -16,6 +16,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 
 @RestController
 @RequestMapping("/api/evidence")
@@ -147,5 +150,47 @@ public class EvidenceController {
                     .body(Map.of("message", "Unable to list evidence"));
         }
     }
+
+@GetMapping("/open/{storedName:.+}")
+public ResponseEntity<Resource> openEvidence(
+        @PathVariable String storedName,
+        @RequestParam(defaultValue = "false") boolean download) {
+
+    try {
+        // Prevent directory traversal
+        if (storedName.contains("/") || storedName.contains("\\")
+                || storedName.contains("..")) {
+            return ResponseEntity.badRequest().build();
+        }                        
+ 
+        Path filePath = uploadDir.resolve(storedName).normalize();
+
+        if (!filePath.startsWith(uploadDir)
+                || !Files.isRegularFile(filePath)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Resource resource = new UrlResource(filePath.toUri());
+
+        String contentType = Files.probeContentType(filePath);
+        if (contentType == null) {
+            contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+        }
+
+        String disposition = download ? "attachment" : "inline";
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(
+                    HttpHeaders.CONTENT_DISPOSITION,
+                    disposition + "; filename=\"" + storedName + "\""
+                )
+                .body(resource);
+
+    } catch (IOException e) {
+        return ResponseEntity.internalServerError().build();
+    }
+}
+
 
 }
