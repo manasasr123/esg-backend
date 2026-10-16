@@ -64,8 +64,11 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOrigins(
-            java.util.List.of("http://localhost:5173")
-        );
+        	    java.util.List.of(
+        	        "http://localhost:5173",
+        	        "https://esg-frontend-xu2d.onrender.com"
+        	    )
+        	);
         config.setAllowedMethods(
             java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")
         );
